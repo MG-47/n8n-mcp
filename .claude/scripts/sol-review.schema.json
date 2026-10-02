@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["verdict", "summary", "findings"],
+  "properties": {
+    "verdict": { "type": "string", "enum": ["PASS", "FAIL"] },
+    "summary": { "type": "string" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["category", "severity", "file", "line", "issue", "fix"],
+        "properties": {
+          "category": { "type": "string", "description": "short kebab-case slug, stable across rounds for the same defect" },
+          "severity": { "type": "string", "enum": ["blocker", "major", "minor", "nit"] },
+          "file": { "type": "string" },
+          "line": { "type": "integer" },
+          "issue": { "type": "string" },
+          "fix": { "type": "string" }
+        }
+      }
+    }
+  }
+}

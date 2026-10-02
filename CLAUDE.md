@@ -197,6 +197,24 @@ The MCP server exposes tools in several categories:
 ### Development Best Practices
 - Run typecheck and lint after every code change
 
+### Multi-Model Orchestration
+Non-trivial changes (feature, bug fix, refactor) go through `/orchestrate <task>`:
+Opus plans -> `sonnet-worker` implements -> `sol-reviewer` reviews the diff -> `sonnet-worker` fixes -> Sol re-reviews until PASS.
+
+| Role | Model | Agent / tool | Can edit files |
+|------|-------|--------------|----------------|
+| Orchestrator/planner | Opus 5.5 (`claude-opus-5-5`, set in `.claude/settings.json`) | main session | only trivial edits |
+| Worker | Sonnet 5.5 | `sonnet-worker` (all other project agents are pinned to Sonnet too) | yes, never commits |
+| Escalation | Fable 5.1 | `fable-escalation` | no (advice only) |
+| Reviewer | Sol via Codex CLI | `sol-reviewer` -> `.claude/scripts/sol-review.sh` | never |
+
+- Fable is escalation-only: same blocker finding in 2 consecutive Sol rounds, a worker reporting BLOCKED, or an explicit logged grant (`orch-state.sh escalate "<reason>"`). A hook rejects any other Fable spawn. See `/escalate`.
+- Sol is read-only by construction: Codex runs with `-s read-only` on a throwaway snapshot, the real repo and snapshot are fingerprinted before/after (change => exit 3), and hooks reject direct `codex` calls and sandbox-weakening flags. Never call `codex` directly; use `/sol-review` or the wrapper.
+- Only wrapper exit 0 is a PASS. Sol unavailable, malformed output, empty diff, round cap, or a violation means "not reviewed" and is reported, not worked around.
+- While a task is active (`orch-state.sh begin`), `git commit`/`push` and finishing the session are blocked until Sol passes the exact current diff. Commit only when the user asks.
+- Role/model/limit settings: `.claude/orchestration.conf`. Run `.claude/scripts/test-orchestration.sh` after changing anything under `.claude/` (needs `jq`; Codex sandbox checks run when `codex` is installed).
+- Do not edit `.claude/hooks`, `.claude/scripts`, `.claude/settings.json` or `.claude/orchestration.conf` to get past a gate.
+
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.

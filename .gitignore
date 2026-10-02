@@ -144,3 +144,7 @@ ui-apps/node_modules/
 
 # Telemetry configuration (user-specific)
 ~/.n8n-mcp/
+
+# Orchestration runtime state
+.claude/state/
+.claude/settings.local.json
